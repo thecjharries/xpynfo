@@ -29,6 +29,61 @@ Features
 .. |get_properties| replace:: ``xcb_get_property`` calls
 .. _get_properties: https://www.systutorials.com/docs/linux/man/3-xcb_get_property/
 
+System Dependencies
+===================
+
+The core features depend on ``libxcb``. |xcffib_docs|_ also mention ``libxcb-render``. I suspect the full list of ``xcb`` components is actually necessary, but I haven't checked from a fresh install yet.
+
+Here's a good way to discover dependencies in the RPM world. You should be able to replace ``dnf`` with ``yum`` on older systems.
+
+.. code:: shell-session
+
+    $ sudo dnf install -y dnf-utils --allowerasing
+
+    # For a full XCB install, use this as the first line instead
+    # UNLISTED_DEPS=($(eval "echo 'xcb-'{'proto','util-*'}{'','-devel'}"));
+    $ UNLISTED_DEPS=($(eval "echo xcb-util-renderutil{,-devel}")); \
+        DEPS=($(\
+            repoquery --requires --resolve python2-xcffib \
+                | awk -F':' '\
+                    /^[^:]*:[^:]*$/{ \
+                        gsub("-[0-9]+$", "", $1); \
+                        print $1; \
+                    }' \
+                | sort -u \
+        )); \
+        FULL_DEPS=( "${UNLISTED_DEPS[@]}" "${DEPS[@]}" "${DEPS[@]/%/-devel}" )
+        eval sudo dnf install \
+            --skip-broken \
+            $(printf "'%s' " "${FULL_DEPS[@]}")
+
+    Package xcb-util-renderutil-0.3.9-10.fc28.x86_64 is already installed, skipping.
+    Package xcb-util-renderutil-devel-0.3.9-10.fc28.x86_64 is already installed, skipping.
+    Package libxcb-1.13-1.fc28.x86_64 is already installed, skipping.
+    Package libxcb-1.13-1.fc28.i686 is already installed, skipping.
+    Package python2-2.7.15-1.fc28.x86_64 is already installed, skipping.
+    Package python2-cffi-1.11.2-1.fc28.x86_64 is already installed, skipping.
+    Package python2-six-1.11.0-3.fc28.noarch is already installed, skipping.
+    Package libxcb-devel-1.13-1.fc28.x86_64 is already installed, skipping.
+    Package python2-devel-2.7.15-1.fc28.x86_64 is already installed, skipping.
+    No match for argument: python2-cffi-devel
+    No match for argument: python2-six-devel
+    Dependencies resolved.
+    Nothing to do.
+    Complete!
+
+    # Or, for an even simpler full install,
+    $ sudo dnf install 'libxcb*' 'xcb*'
+
+I have no idea how to do this in other ecosystems. It should be possible in |debian|_ or |arch|_ with some tweaking.
+
+.. |xcffib_docs| replace:: The ``xcffib`` docs
+.. _xcffib_docs: https://github.com/tych0/xcffib#installation
+.. |debian| replace:: the Debian world
+.. _debian: https://askubuntu.com/questions/80655/how-can-i-check-dependency-list-for-a-deb-package
+.. |arch| replace:: the Arch world
+.. _arch: https://wiki.archlinux.org/index.php/Pacman/Tips_and_tricks#Getting_the_dependencies_list_of_several_packages
+
 Installation
 ============
 
